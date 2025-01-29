@@ -1,4 +1,4 @@
-// setup https://www.youtube.com/watch?v=3eCU97h0YHs
+// https://www.youtube.com/watch?v=3eCU97h0YHs
 
 // mobile check
 let mobilmi = false;
@@ -36,6 +36,8 @@ var offset = -10;
 var yRatio = .3;
 var t = 0;
 var speed = 0;
+var playing = true; 
+var k = {ArrowUp:0, ArrowLeft:0, ArrowRight:0}; // klavye tuşları
 
 var player = new function(){
     this.x = c.width/2;
@@ -45,11 +47,38 @@ var player = new function(){
     this.rot = 0;
     this.ySpeed = 0;
     this.rSpeed = 0;
-    var playing = true;
+    // var playing = true;
 
     // interface
     this.startBtn = new Image();
     this.startBtn.src = "play.png";
+    this.leftBtn = new Image();
+    this.leftBtn.src = "left.png";
+    this.rightBtn = new Image();
+    this.rightBtn.src = "right.png";
+    this.fireBtn = new Image();
+    this.fireBtn.src = "gas.png";
+
+    this.drawInterface = function(){
+        // interface draw
+        if (playing){
+
+            if (mobilmi){
+                ctx.drawImage(this.leftBtn, 20, c.height-90, 70, 70);
+                ctx.drawImage(this.rightBtn, 110, c.height-90, 70, 70);
+                ctx.drawImage(this.fireBtn, c.width-90, c.height-90, 70, 70);
+            }
+
+            
+        }else{
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.font = "75px Impact";
+            ctx.fillStyle = "white";
+            ctx.fillText("OYUN BİTTİ", c.width/2, c.height/3);
+            ctx.drawImage(this.startBtn, (c.width/2)-40, c.height/3+50,100,100);
+        }
+    }
 
 
     this.draw = function(){
@@ -72,13 +101,8 @@ var player = new function(){
         if (!playing || gnd && Math.abs(this.rot) > Math.PI * .5) {
             playing = false;
             this.rSpeed = 0.5;   
+            k.ArrowUp = 1;  
             this.x -= speed * 5;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.font = "75px Impact";
-            ctx.fillStyle = "white";
-            ctx.fillText("OYUN BİTTİ", c.width/2, c.height/3);
-            ctx.drawImage(this.startBtn, (c.width/2)-40, c.height/3+50,100,100);
 
         }
 
@@ -88,12 +112,18 @@ var player = new function(){
             this.rSpeed = this.rSpeed - (angle - this.rot);
         }
 
+        this.rSpeed += (k.ArrowLeft - k.ArrowRight) * 0.05;
+        this.rot -= this.rSpeed * 0.05;
+
         this.rot -= this.rSpeed * 0.1;
 
         if (this.rot > Math.PI) this.rot = -Math.PI;
         if (this.rot < -Math.PI) this.rot = Math.PI;
         
         this.y += this.ySpeed;  
+        // drawing
+
+        // truck draw
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rot);   
@@ -106,8 +136,8 @@ var player = new function(){
 // draw
 function draw() {
 
-    speed -= (speed-1) * 0.01;  // 1 olamayan hızı 1'e yaklaştırıyoruz
-    t += 3 * speed; // t değerini arttırıyoruz
+    speed -= (speed-(k.ArrowUp)) * 0.01;  // 1 olamayan hızı 1'e yaklaştırıyoruz
+    t += 10 * speed; // t değerini arttırıyoruz
     t++;
 
     //bg
@@ -131,14 +161,31 @@ function draw() {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+
+    player.drawInterface();
     
     requestAnimationFrame(draw);
 }
 
 draw();
 
-c.addEventListener("touchstart", handleStart, false);
-c.addEventListener("touchend", handleEnd, false);
+if (mobilmi){
+    c.addEventListener("touchstart", handleStart, false);
+    c.addEventListener("touchend", handleEnd, false);
+}else{
+    // desktop click
+    onkeydown = d => k[d.key] = 1;
+    onkeyup = d => k[d.key] = 0;
+    c.addEventListener("mousedown", handleInput, false);   
+    }
+
+window.onresize = function(){
+    window.location.reload();
+}
+
+// ctx.drawImage(this.leftBtn, 20, c.height-90, 70, 70);
+// ctx.drawImage(this.rightBtn, 110, c.height-90, 70, 70);
+// ctx.drawImage(this.fireBtn, c.width-90, c.height-90, 70, 70);
 
 function handleStart(evt){
     evt.preventDefault();
@@ -150,25 +197,50 @@ function handleStart(evt){
         if (touch.pageX > ((c.width/2)-40)  && touch.pageX < ((c.width/2)+40) && touch.pageY> ((c.height/3)+50) && touch.pageY < ((c.height/3)+150)) {
             window.location.reload();
         }
-    }
-}
+
+        if (touch.pageX > 20 && touch.pageX < 90 && touch.pageY> c.height-90 && touch.pageY < c.height-20) {
+            console.log("left");
+            k.ArrowLeft = 1;
+        }
+
+        if (touch.pageX > 110 && touch.pageX < 180 && touch.pageY> c.height-90 && touch.pageY < c.height-20) {
+            console.log("right");
+            k.ArrowRight = 1;   
+        }
+
+        if (touch.pageX > c.width-90 && touch.pageX < c.width-20 && touch.pageY> c.height-90 && touch.pageY < c.height-20) {
+            console.log("fire");
+            k.ArrowUp = 1;
+
+            }
+}}
 
 function handleEnd(evt){
     evt.preventDefault();
     var touches = evt.changedTouches;
     for(let i=0; i<touches.length; i++){
         var touch = touches[i];
-        // console.log(touch.pageX + ":" + touch.pageY);
-        if (touch.pageX > ((c.width/2)-40)  && touch.pageX < ((c.width/2)+40) && touch.pageY> ((c.height/3)+50) && touch.pageY < ((c.height/3)+150)) {
-            window.location.reload();
+        if (touch.pageX > 20 && touch.pageX < 90 && touch.pageY> c.height-90 && touch.pageY < c.height-20) {
+            console.log("left");
+            k.ArrowLeft = 0;
         }
+
+        if (touch.pageX > 110 && touch.pageX < 180 && touch.pageY> c.height-90 && touch.pageY < c.height-20) {
+            console.log("right");
+            k.ArrowRight = 0;   
+        }
+
+        if (touch.pageX > c.width-90 && touch.pageX < c.width-20 && touch.pageY> c.height-90 && touch.pageY < c.height-20) {
+            console.log("fire");
+            k.ArrowUp = 0;
+
+            }
     }
 
 }
 
 
-// desktop click
-c.addEventListener("mousedown", handleInput, false);
+
 
 function handleInput(evt) {
     evt.preventDefault();
@@ -180,8 +252,48 @@ function handleInput(evt) {
     const buttonWidth = 100;
     const buttonHeight = 100;
 
+    const leftButtonX = 20;
+    const leftButtonY = c.height - 90;
+    const leftButtonWidth = 70;
+    const leftButtonHeight = 70;
+
+    const rightButtonX = 110;
+    const rightButtonY = c.height - 90;
+
+    const fireButtonX = c.width - 90;
+    const fireButtonY = c.height - 90;
+    
     // Check if click/touch is within the button boundaries
-    if (
+    if (playing &&
+        x > leftButtonX &&
+        x < leftButtonX + buttonWidth &&
+        y > leftButtonY &&
+        y < leftButtonY + buttonHeight
+    ) {
+        console.log("left");    
+    }
+
+    if (playing &&
+        x > rightButtonX &&
+        x < rightButtonX + buttonWidth &&
+        y > rightButtonY &&
+        y < rightButtonY + buttonHeight 
+    ) { 
+        console.log("right");   
+    }
+
+    if (playing &&
+        x > fireButtonX &&
+        x < fireButtonX + buttonWidth &&
+        y > fireButtonY &&
+        y < fireButtonY + buttonHeight  
+    ) { 
+        console.log("fire");    
+    }
+
+     // Check if click/touch is within the left button boundaries
+     if (
+        !playing &&
         x > buttonX &&
         x < buttonX + buttonWidth &&
         y > buttonY &&
